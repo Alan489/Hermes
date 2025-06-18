@@ -1,0 +1,45 @@
+﻿@page "/cad/login"
+@using Hermes.Shared
+@inject HttpClient http
+@inject NavigationManager navi
+@inject IJSRuntime JS
+@inject Persistant_Info p_i
+<PageTitle>LOGIN :: HVAC CAD</PageTitle>
+
+<div class="Index">
+    <div class="Logon">
+        <div class="LogonHeader">
+            <img src="CommunicationsPatch.png"/>
+        </div>
+        <div class="LogonBox">
+            <form @onsubmit="login">
+                <div class="FormLabel">
+                    Username
+                </div>
+                <div class="inputHolder">
+                    <input type="text" @bind-value="u"/>
+                </div>
+                <div class="FormLabel">
+                    Password
+                </div>
+                <div class="inputHolder">
+                    <input type="password" @bind-value="p" />
+                </div>
+                <button @onclick="login">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@code{
+    private string u = "";
+    private string p = "";
+
+    private async void login()
+    {
+        
+    }
+
+}

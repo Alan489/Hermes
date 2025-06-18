@@ -1,0 +1,75 @@
+﻿@page "/secure/toneout"
+@using Hermes.Shared
+@inject HttpClient http
+@inject IJSRuntime JS
+@inject Persistant_Info p_i
+@inject NavigationManager navi
+<PageTitle>Tone Out :: HVAC</PageTitle>
+
+<div class="ToneOutContainer">
+ <div class="ToneOutHeader">
+  <img src="CommunicationsPatch.png" />
+  <h3>
+   <i>HOBOKEN VOLUNTEER AMBULANCE CORPS</i><br />
+   Tone Out <br />
+  </h3>
+
+ </div>
+ <div class="ToneOutRoot">
+  @if (tones != null)
+  {
+   <div class="ToneOutTones">
+    @foreach (KeyValuePair<string, string> keyValuePair in tones)
+    {
+       <button class='@(keyValuePair.Value) @(toning == keyValuePair.Key ? "ToneActive" : "")' @onclick="() => toneClick(keyValuePair.Key)">@keyValuePair.Key</button>
+    }
+
+   </div>
+  }
+ </div>
+</div>
+
+
+
+
+@code {
+
+ private Dictionary<string, string>? tones = null;
+ private string? toning = null;
+
+ protected override async Task OnInitializedAsync()
+ {
+  await p_i.ForceInit();
+  var ret = await http.GetAsync($"/API/Toneout/{p_i.Unit}/{p_i.Password}/get");
+
+  tones = await ret.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+
+  StateHasChanged();
+
+ }
+
+
+ private async Task toneClick(string s)
+ {
+  if (toning == s)
+  {
+   await stopTone();
+   return;
+  }
+  if (toning != null)
+   await stopTone();
+
+  toning = s;
+  StateHasChanged();
+
+  await http.GetAsync($"/API/Toneout/{p_i.Unit}/{p_i.Password}/start/{s}");
+ }
+
+ private async Task stopTone()
+ {
+  toning = null;
+  await http.GetAsync($"/API/Toneout/{p_i.Unit}/{p_i.Password}/stop/");
+  StateHasChanged();
+ }
+
+}

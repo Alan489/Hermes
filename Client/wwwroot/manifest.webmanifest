@@ -1,0 +1,15 @@
+{
+  "name": "Hoboken VAC MDT",
+  "short_name": "HVACMDT",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "~Hoboken Volunteer Ambulance Corps Communications~",
+  "icons": [
+    {
+      "src": "CommunicationsPatch192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

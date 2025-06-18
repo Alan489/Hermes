@@ -1,0 +1,75 @@
+﻿@page "/secure/map"
+@using Hermes.Shared
+@inject HttpClient http
+@inject IJSRuntime JS
+@inject Persistant_Info p_i
+@inject NavigationManager navi
+<PageTitle>MAP :: HVAC</PageTitle>
+
+<div class="Index">
+    <div id="map"></div>
+</div>
+
+@code{
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("mapinit", null);
+    }
+
+    private Timer? secondRefresh;
+    private Dictionary<string, string[]>? locations;
+    private List<string[]>? assignments;
+
+    private void renderAllUnits()
+    {
+        if (locations == null) return;
+    }
+
+    private async Task<Dictionary<string, string[]>?> getLocations()
+    {
+        //return null;
+        return await http.GetFromJsonAsync<Dictionary<string, string[]>?>($"API/CurrentAssignments/locations/{p_i.Unit}/{p_i.Password}");
+    }
+
+    
+    private async Task<List<string[]>?> getCallLocations()
+    {
+        //return null;
+        return await http.GetFromJsonAsync<List<string[]>?>($"API/CurrentAssignments/calllocations/{p_i.Unit}/{p_i.Password}");
+    }
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        await p_i.ForceInit();
+        if (string.IsNullOrEmpty(p_i.Unit) || string.IsNullOrEmpty(p_i.Password))
+            navi.NavigateTo("/");
+        AutoResetEvent autoEvent = new AutoResetEvent(false);
+        secondRefresh = new Timer(Click, autoEvent, 0, 2500);
+    }
+
+    public async void Click(Object? stateInfo)
+    {
+        var newLocations = await getLocations();
+        if (newLocations == null)
+            return;
+        locations = newLocations;
+        foreach(KeyValuePair<string, string[]> kvp in locations)
+        {
+            //Console.WriteLine($"{kvp.Key}: {kvp.Value[0]}, {kvp.Value[1]}");
+            await JS.InvokeVoidAsync("addLocation", kvp.Key, kvp.Value[0], kvp.Value[1], kvp.Value[2]);
+        }
+        assignments = await getCallLocations();
+
+        if (assignments != null && assignments.Count > 0)
+        {
+            foreach (string[] ass in assignments)
+                if (!string.IsNullOrEmpty(ass[0]) && !string.IsNullOrEmpty(ass[1]))
+                    await JS.InvokeVoidAsync("addCallLocation", ass[0], ass[1]);
+        }
+
+        await JS.InvokeVoidAsync("renderLocationObjects", null);
+        
+    }
+}

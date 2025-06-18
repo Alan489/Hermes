@@ -1,0 +1,264 @@
+﻿@page "/secure/mdt"
+@using Hermes.Shared
+@inject HttpClient http
+@inject IJSRuntime JS
+@inject Persistant_Info p_i
+@inject IGeolocationService geo
+@inject NavigationManager navi
+<PageTitle>MDT :: HVAC</PageTitle>
+
+<div class="@((assignment == null || assignment.uid == -1) ? "MDTIndexNoJob": "MDTIndexJob")">
+    <div class="MDTHeader">
+        <img src="CommunicationsPatch.png" />
+        <h3>
+            <i>HOBOKEN VAC</i><br />
+            Mobile Data Terminal <br />
+            Unit: @p_i.Unit
+        </h3>
+        
+    </div>
+    <div class="MDTDisplay">
+
+        @if(assignment != null)
+        {
+            <div class="MDTAssignmentContainer">
+                <div class="MDTAssignmentPersonnel">
+                    <h5>
+                        Unit Details
+                        
+                            @if (muted)
+                            {
+                            <button class="muteButton" @onclick="() => muted = !muted">Muted</button>
+                            }else
+                            {
+                            <button class="muteButton" @onclick="() => muted = !muted">Unmuted</button>
+                            }
+                    </h5>
+                    @assignment.personnel
+                </div>
+                @if (assignment.uid != -1)
+                {
+                    <div class="MDTJobDescription">
+                        <h5>
+                            Current Incident
+                        </h5>
+                        Dispatched: @assignment.timeout.ToString("HH:mm")<br>
+                        Address: @assignment.address. @assignment.location_unit<br>
+                        Type: @assignment.type<br>
+                        Nature: @assignment.desc
+                    </div>
+                    <div class="MDTJobButtons">
+                        <div class="MDTTimeOut">
+                            Time out: @assignment.timeout.ToString("HH:mm")
+                        </div>
+                        @if (assignment.arrival_time != null)
+                        {
+                            <div class="MDTOnScene">
+                                On Scene: @assignment.arrival_time?.ToString("HH:mm")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="MDTOnScene">
+                                <button @onclick='() => status("OnScene")'>On Scene</button>
+                            </div>
+                        }
+
+                        @if (assignment.transport_time != null)
+                        {
+                            <div class="MDTTransport">
+                                Transporting: @assignment.transport_time?.ToString("HH:mm")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="MDTTransport">
+                                <button @onclick='() => status("Transport")'>Transporting</button>
+                            </div>
+                        }
+
+                        @if (assignment.transportdone_time != null)
+                        {
+                            <div class="MDTTransportDone">
+                                Arrival: @assignment.transportdone_time?.ToString("HH:mm")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="MDTTransportDone">
+                                <button @onclick='() => status("Arrival")'>Arrived</button>
+                            </div>
+                        }
+
+                        @if (assignment.cleared_time != null)
+                        {
+                            <div class="MDTClear">
+                                Cleared: @assignment.timeout.ToString("HH:mm")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="MDTClear">
+                                <button @onclick='() => status("Clear")'>Clear</button>
+                            </div>
+                        }
+
+                    </div>
+                } else
+                {
+                    <div class="MDTNoJob">
+                        <h5>
+                            No Current Assignment
+                        </h5>
+                    </div>
+                }
+                
+            </div>
+
+        } else
+        {
+            <div class="MDTOOS">
+                Unit is Out of Service
+            </div>
+        }
+
+    </div>
+</div>
+
+
+
+
+<audio style="display:none" id="AttachedIncident" source src="audio/IncidentAttached.wav" />
+<audio style="display:none" id="UpdatedIncident" source src="audio/IncidentUpdated.wav" />
+
+@code{
+    private Timer secondRefresh;
+    private List<Assignment> assignments = new List<Assignment>();
+    private Assignment? assignment = null;
+    private bool playAttached = false;
+    private bool playUpdated = false;
+    private bool attached = false;
+    private bool muted = true;
+    private int coolDown = 0;
+    private GeolocationCoordinates? glc = null;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await p_i.ForceInit();
+        if (string.IsNullOrEmpty(p_i.Unit) || string.IsNullOrEmpty(p_i.Password))
+            navi.NavigateTo("/");
+        AutoResetEvent autoEvent = new AutoResetEvent(false);
+        secondRefresh = new Timer(Click, autoEvent, 0, 2500);
+
+
+    }
+
+    public void act(GeolocationPosition glp)
+    {
+        glc = glp.Coords;
+    }
+
+    public void err(GeolocationPositionError gpe)
+    {
+        Console.WriteLine(gpe.Message);
+    }
+
+    public async void Click(Object stateInfo)
+    {
+        List<Assignment>? newAssignments = await p_i.getCurrentAssignments(glc);
+        if (coolDown > 0)
+            coolDown--;
+
+        if (newAssignments == null)
+            return;
+        geo.GetCurrentPosition(act, err);
+
+        Assignment? newAssignment = newAssignments.Find(ass => ass.unit == p_i.Unit);
+
+        if (newAssignment == null)
+        {
+            attached = false;
+            assignment = null;
+            StateHasChanged();
+            return;
+        }
+
+        if ((assignment == null || assignment.uid == -1) && newAssignment.uid != -1)
+            playAttached = true;
+        else
+            if ((assignment == null && newAssignment != null) || (assignment != null && newAssignment != null && !assignment.DataEquals(newAssignment)))
+            playUpdated = true;
+
+        assignment = newAssignment;
+
+        StateHasChanged();
+
+
+        if (!muted && assignment != null && assignment.uid != -1)
+        {
+            if (playUpdated)
+            {
+                await JS.InvokeVoidAsync("PlayUpdatedIncidentSound", null);
+            }
+
+            if (playAttached)
+            {
+                await JS.InvokeVoidAsync("PlayAttachedIncidentSound", null);
+            }
+        }
+
+
+        playAttached = false;
+        playUpdated = false;
+
+
+    }
+
+    private string getNextStatus()
+    {
+        string ret = "Error??";
+        if (assignment == null) return "Error???";
+        if (assignment.arrival_time == null)
+            ret = "Mark: On Scene";
+        else if (assignment.transport_time == null)
+            ret = "Mark: Transporting";
+        else if (assignment.transportdone_time == null)
+            ret = "Mark: Arrived";
+        else if (assignment.cleared_time == null)
+            ret = "Mark: Clear";
+        return ret;
+
+    }
+
+    private async Task status(string s)
+    {
+        if (assignment == null) return;
+
+        string col = "";
+
+        switch(s)
+        {
+            case "OnScene":
+                col = "arrival_time";
+                assignment.arrival_time = DateTime.Now;
+                break;
+            case "Transport":
+                col = "transport_time";
+                assignment.transport_time = DateTime.Now;
+                break;
+            case "Arrival":
+                col = "transportdone_time";
+                assignment.transportdone_time = DateTime.Now;
+                break;
+            default:
+                col = "cleared_time";
+                assignment.cleared_time = DateTime.Now;
+                break;
+        }
+
+        StateHasChanged();
+
+        await http.GetAsync($"/API/CurrentAssignments/{p_i.Unit}/{p_i.Password}/{assignment.uid}/{col}");
+    }
+
+}

@@ -1,0 +1,58 @@
+﻿@page "/"
+@using Hermes.Shared
+@inject HttpClient http
+@inject NavigationManager navi
+@inject IJSRuntime JS
+@inject Persistant_Info p_i
+<PageTitle>LOGIN :: HVAC</PageTitle>
+
+<div class="Index">
+    <div class="Logon">
+        <div class="LogonHeader">
+            <img src="CommunicationsPatch.png"/>
+        </div>
+        <div class="LogonBox">
+            <form @onsubmit="login">
+                <div class="FormLabel">
+                    Username
+                </div>
+                <div class="inputHolder">
+                    <input type="text" @bind-value="u"/>
+                </div>
+                <div class="FormLabel">
+                    Password
+                </div>
+                <div class="inputHolder">
+                    <input type="password" @bind-value="p" />
+                </div>
+                <button @onclick="login">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@code{
+    private string u = "";
+    private string p = "";
+
+    private async void login()
+    {
+        bool s = await p_i.validate(u, p);
+        if (s)
+        {
+            if (u == "Board")
+                navi.NavigateTo("/secure/board");
+            else
+            if (u == "Map")
+                navi.NavigateTo("/secure/map");
+            else
+            if (u == "ToneOut")
+                navi.NavigateTo("/secure/ToneOut");
+            else
+                navi.NavigateTo("/secure/mdt");
+        }
+    }
+
+}

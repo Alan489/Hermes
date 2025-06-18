@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Hermes</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="Hermes.Client.styles.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="mapjs/map.js"></script>
+    <script src="_content/Blazor.Geolocation.WebAssembly/blazorators.geolocation.g.js"></script>
+    <script>
+        window.PlayAttachedIncidentSound = function () {
+            document.getElementById('AttachedIncident').play();
+        }
+
+        window.PlayUpdatedIncidentSound = function () {
+            document.getElementById('UpdatedIncident').play();
+        }
+    </script>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+
+
+
+</html>

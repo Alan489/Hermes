@@ -1,0 +1,175 @@
+﻿@page "/secure/board"
+@using Hermes.Shared
+@inject HttpClient http
+@inject IJSRuntime JS
+@inject Persistant_Info p_i
+@inject NavigationManager navi
+<PageTitle>Board :: HVAC</PageTitle>
+
+<div class="Index">
+    <div class="Header">
+        <h2>
+            HOBOKEN VOLUNTEER AMBULANCE CORPS
+        </h2>
+        Current Unit Assignments
+    </div>
+    <div class="Display">
+
+        @foreach(Assignment ass in assignments)
+        {
+            <div class="Assignment">
+                <div Class="Unit">
+                    @ass.unit
+                </div>
+                <div class="Personnel">
+                    @if (!string.IsNullOrEmpty(ass.personnel))
+                    {
+                        <span>@ass.personnel</span>
+                    }
+                    else
+                    {
+                        <span class="nodata">No Unit Details</span>
+                    }
+                </div>
+                @if (ass.uid != -1){
+                    <div class="Run">
+                        <div class="RunHeader">
+                            <div>
+                                Assignment
+                            </div>
+                        </div>
+                        <div Class="Location">
+                            @if (!string.IsNullOrEmpty(ass.address))
+                            {
+                                <span>@ass.address. @ass.location_unit</span>
+                            }
+                            else
+                            {
+                                <span class="nodata">No Address Information</span>
+                            }
+                        </div>
+                        <div Class="Type">
+                            @if (!string.IsNullOrEmpty(ass.type) && ass.type != "not selected")
+                            {
+                                <span>Incident Type: @ass.type</span>
+                            }
+                            else
+                            {
+                                <span class="nodata">No Incident Type</span>
+                            }
+                        </div>
+                        <div Class="Description">
+                            @if (!string.IsNullOrEmpty(ass.desc))
+                            {
+                                <span>@ass.desc</span>
+                            }
+                            else
+                            {
+                                <span class="nodata">No Incident Information</span>
+                            }
+                        </div>
+                        <div Class="Timeout">
+                            <span>Time of Page: @ass.timeout.ToString("HH:mm")</span>
+                        </div>
+                    </div>
+                } else
+                {
+                    <span class="nodata">Currently In-Service</span>
+                }
+                
+            </div>
+        }
+        @if (muted)
+        {
+            <button class="muteButton" @onclick="() => muted = !muted">Muted</button>
+        }
+    </div>
+</div>
+
+
+
+
+<audio style="display:none" id="AttachedIncident" source src="audio/IncidentAttached.wav" preload="auto"/>
+<audio style="display:none" id="UpdatedIncident" source src="audio/IncidentUpdated.wav" preload="auto"/>
+
+@code{
+    private Timer secondRefresh;
+    private List<Assignment> assignments = new List<Assignment>();
+    private bool playAttached = false;
+    private bool playUpdated = false;
+    private bool muted = true;
+    private int cooldown = 0;
+    protected async override Task OnInitializedAsync()
+    {
+        await p_i.ForceInit();
+        if (string.IsNullOrEmpty(p_i.Unit) || string.IsNullOrEmpty(p_i.Password))
+            navi.NavigateTo("/");
+        AutoResetEvent autoEvent = new AutoResetEvent(false);
+        secondRefresh = new Timer(Click, autoEvent, 0, 2500);
+
+
+    }
+
+    public async void Click(Object stateInfo)
+    {
+        List<Assignment>? newAssignments = await p_i.getCurrentAssignments(null);
+
+        if (newAssignments == null)
+            return;
+
+
+        List<Assignment> tempAssignments = new List<Assignment>();
+        List<Assignment> removeAssignments = new List<Assignment>();
+
+        if (assignments.Count > 0)
+            foreach (Assignment newAssignment in newAssignments)
+            {
+                Assignment? oldAssignment = assignments.Find(ass => ass.unit == newAssignment.unit);
+                if (oldAssignment == null)
+                    continue;
+
+
+                if (oldAssignment.uid == -1 && newAssignment.uid != -1)
+                    playAttached = true;
+
+                if (oldAssignment.uid == newAssignment.uid && !oldAssignment.DataEquals(newAssignment))
+                    playUpdated = !playAttached;
+            }
+
+        foreach (Assignment ass in removeAssignments)
+            newAssignments.Remove(ass);
+
+        foreach (Assignment ass in tempAssignments)
+            newAssignments.Add(ass);
+
+
+        newAssignments = newAssignments.OrderBy(a => a.unit).ToList();
+        assignments = newAssignments;
+
+        StateHasChanged();
+
+        if (!muted && cooldown == 0)
+        {
+            if (playUpdated)
+            {
+    Console.WriteLine("Hunngggggggggg");
+                await JS.InvokeVoidAsync("PlayUpdatedIncidentSound", null);
+            }
+
+            if (playAttached)
+            {
+    Console.WriteLine("Hunngggggggggg1");
+                await JS.InvokeVoidAsync("PlayAttachedIncidentSound", null);
+            }
+
+            cooldown = 10;
+        }
+
+        cooldown--;
+        playAttached = false;
+        playUpdated = false;
+
+
+    }
+
+}
