@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace Hermes.Shared
 {
- public class Assignment
+ public class Priority
  {
   public int uid { get; set; }
-  public string unit { get; set; }
+  public List<string> unit { get; set; }
   public DateTime timeout { get; set; }
   public string address { get; set; }
   public string type { get; set; }
@@ -25,27 +25,6 @@ namespace Hermes.Shared
   public string? lon { get; set; }
 
   public string call_number { get; set; }
-
-  public Priority convertToPriority()
-  {
-   Priority priority = new Priority();
-
-   priority.uid = uid;
-   priority.unit = new List<string>();
-   priority.timeout = timeout;
-   priority.address = address;
-   priority.type = type;
-   priority.desc = desc;
-   priority.personnel = personnel;
-   priority.call_number = call_number;
-   priority.transport_time = transport_time;
-   priority.unit.Add(unit);
-   priority.lat = lat;
-   priority.lon = lon;
-
-
-   return priority;
-  }
 
   public bool DataEquals(Assignment other)
   {

@@ -11,7 +11,7 @@
   <img src="CommunicationsPatch.png" />
   <h3>
    <i>HOBOKEN VOLUNTEER AMBULANCE CORPS</i><br />
-   Tone Out <br />
+   Dispatch Console <br />
   </h3>
 
  </div>
@@ -21,11 +21,18 @@
    <div class="ToneOutTones">
     @foreach (KeyValuePair<string, string> keyValuePair in tones)
     {
-       <button class='@(keyValuePair.Value) @(toning == keyValuePair.Key ? "ToneActive" : "")' @onclick="() => toneClick(keyValuePair.Key)">@keyValuePair.Key</button>
+     <button class='@(keyValuePair.Value) @(toning == keyValuePair.Key ? "ToneActive" : "")' @onclick="() => toneClick(keyValuePair.Key)">@keyValuePair.Key</button>
     }
 
    </div>
   }
+  <div class="AutoDispatcher">
+    <div class="AutoDispatcherHeader">
+      Paging
+    </div>
+   <input type="text" @bind-value="dispatch"/>
+   <button @onclick="sendPage">Go</button>
+  </div>
  </div>
 </div>
 
@@ -36,6 +43,7 @@
 
  private Dictionary<string, string>? tones = null;
  private string? toning = null;
+ private string dispatch = "";
 
  protected override async Task OnInitializedAsync()
  {
@@ -48,6 +56,15 @@
 
  }
 
+ private async Task sendPage()
+ {
+  if (toning != null)
+   await stopTone();
+
+  StateHasChanged();
+
+  await http.GetAsync($"/API/Toneout/{p_i.Unit}/{p_i.Password}/page/{dispatch}");
+ }
 
  private async Task toneClick(string s)
  {

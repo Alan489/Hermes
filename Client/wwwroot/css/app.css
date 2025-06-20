@@ -318,3 +318,22 @@ a, .btn-link {
 .ToneActive {
   border: solid pink 5px;
 }
+
+.PRIORITY {
+  display: flow;
+}
+
+.PRIORITYALERT {
+  position: relative !important;
+  font-size: 90px;
+  width: 80vw;
+  height: 110px;
+  border-bottom: 2px solid red;
+}
+
+.PRIORITYUNIT {
+  position: relative;
+  font-style: italic;
+  font-size: 4em;
+  width: 100%;
+}

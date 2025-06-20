@@ -62,6 +62,22 @@ namespace Hermes.Server.Controllers
    return;
   }
 
+  [HttpGet("{u}/{pw}/page/{inc}")]
+  public async Task pageout(string? u, string? pw, string inc)
+  {
+   CurrentAssignmentsController.currentPriorities.Add(inc);
+   if (string.IsNullOrEmpty(pw) || string.IsNullOrEmpty(u))
+    return;
+
+   if (!validate(u, pw))
+    return;
+
+   NewIncidentPage.page(inc);
+
+
+   return;
+  }
+
   private bool validate(string u, string p)
   {
    string? ret = null;
